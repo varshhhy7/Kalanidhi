@@ -34,7 +34,7 @@ class KalanidhiModel(nn.Module):
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.lm_head.weight = self.token_emb.weight
 
-    def forward(self, input_ids, t):
+def forward(self, input_ids, t, attention_mask=None):
         # t: [batch] or [batch, 1] -> normalize to [batch, 1]
         if t.dim() == 1:
             t = t.unsqueeze(-1)
@@ -47,7 +47,12 @@ class KalanidhiModel(nn.Module):
         x = self.token_emb(input_ids) + self.pos_emb(positions)
         x = self.embed_dropout(x)
 
+        # Convert HuggingFace mask (1=keep, 0=ignore) to PyTorch format (True=ignore)
+        src_key_padding_mask = None
+        if attention_mask is not None:
+            src_key_padding_mask = (attention_mask == 0)
+
         # Add time context and pass through transformer
-        x = self.transformer(x + t_emb)
+        x = self.transformer(x + t_emb, src_key_padding_mask=src_key_padding_mask)
 
         return self.lm_head(x)
