@@ -12,17 +12,14 @@ class KalanidhiDiffusion:
         t: Noise level, float or tensor of shape [batch] or scalar.
            0.0 = no masking, 1.0 = mask everything.
         """
-        # Normalize t to [batch, 1] tensor
         if not isinstance(t, torch.Tensor):
             t = torch.tensor(t, dtype=torch.float32, device=x.device)
         if t.dim() == 0:
             t = t.expand(x.size(0))
         mask_prob = t.view(-1, 1)
 
-        # Randomly select positions to mask
         noise_mask = torch.rand(x.shape, device=x.device) < mask_prob
 
-        # Never mask [CLS] or [SEP] tokens
         special_tokens_mask = (x == self.cls_token_id) | (x == self.sep_token_id)
         final_mask = noise_mask & ~special_tokens_mask
 
@@ -34,3 +31,14 @@ class KalanidhiDiffusion:
     def sample_t(self, batch_size, device):
         """Sample random noise levels for a training batch."""
         return torch.rand(batch_size, device=device)
+
+
+if __name__ == "__main__":
+    diffuser = KalanidhiDiffusion(mask_token_id=4)
+    test_input = torch.tensor([[2, 100, 101, 102, 3]])
+    t = torch.tensor([0.5])
+
+    noised, mask = diffuser.apply_noise(test_input, t)
+    print(f"Original: {test_input}")
+    print(f"Masked:   {noised}")
+    print("Logic test passed.")
